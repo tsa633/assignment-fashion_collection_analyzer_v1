@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fashion Collection Analyzer</title>
+  <style>
+    :root {
+      --bg: #0f1115;
+      --panel: #171a21;
+      --panel-2: #1f2430;
+      --text: #eef2f7;
+      --muted: #9aa4b2;
+      --accent: #8fb7ff;
+      --line: #2b3240;
+      --good: #8fd3a6;
+      --warn: #ffd27d;
+      --bad: #ff9090;
+      --shadow: 0 14px 34px rgba(0,0,0,.24);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: linear-gradient(180deg, #0b0d11 0%, #10131a 100%);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.45;
+    }
+    .wrap {
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 28px;
+    }
+    h1, h2, h3 { margin: 0 0 12px; }
+    h1 { font-size: 2rem; }
+    h2 { font-size: 1.2rem; }
+    p { margin: 0 0 12px; color: var(--muted); }
+    .hero, .panel {
+      background: rgba(23,26,33,.86);
+      border: 1px solid rgba(255,255,255,.07);
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+    .hero { padding: 26px; margin-bottom: 20px; }
+    .panel { padding: 20px; }
+    .toolbar {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 18px;
+      margin-bottom: 20px;
+    }
+    .stack { display: flex; flex-direction: column; gap: 12px; }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      margin-top: 16px;
+    }
+    input[type="file"] {
+      max-width: 100%;
+      padding: 10px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      color: var(--text);
+    }
+    button {
+      border: 0;
+      border-radius: 12px;
+      padding: 11px 16px;
+      font-weight: 600;
+      cursor: pointer;
+      background: var(--accent);
+      color: #0a1020;
+    }
+    button.secondary {
+      background: #2b3240;
+      color: var(--text);
+      border: 1px solid rgba(255,255,255,.08);
+    }
+    button:disabled { opacity: .55; cursor: not-allowed; }
+    .small {
+      font-size: .92rem;
+      color: var(--muted);
+    }
+    .progress-shell {
+      height: 14px;
+      background: #0f1218;
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+    }
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #8fb7ff, #c5d6ff);
+      transition: width .22s ease;
+    }
+    .results {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+      margin-top: 20px;
+    }
+    .results .panel { min-height: 240px; }
+    .palette-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(135px, 1fr));
+      gap: 12px;
+      margin-top: 10px;
+    }
+    .swatch {
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,.08);
+      background: #11141b;
+    }
+    .swatch-color {
+      height: 88px;
+    }
+    .swatch-meta {
+      padding: 10px 12px;
+      font-size: .9rem;
+    }
+    .bar-list { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+    .bar-row { display: grid; grid-template-columns: 160px 1fr 64px; gap: 12px; align-items: center; }
+    .bar-track {
+      height: 11px;
+      background: #10141b;
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid var(--line);
+    }
+    .bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #7fb3ff, #aac8ff);
+    }
+    .chip-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .chip {
+      padding: 9px 11px;
+      border-radius: 999px;
+      background: #202532;
+      border: 1px solid rgba(255,255,255,.07);
+      color: var(--text);
+      font-size: .92rem;
+    }
+    .gallery {
+      margin-top: 20px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+      gap: 14px;
+    }
+    .thumb {
+      background: #151922;
+      border: 1px solid rgba(255,255,255,.07);
+      border-radius: 18px;
+      overflow: hidden;
+    }
+    .thumb img {
+      width: 100%;
+      height: 230px;
+      object-fit: cover;
+      display: block;
+      background: #0c0e13;
+    }
+    .thumb .meta { padding: 10px 12px 12px; }
+    .thumb .meta strong { display: block; font-size: .95rem; margin-bottom: 6px; }
+    .thumb .meta .mini { color: var(--muted); font-size: .84rem; }
+    .status {
+      padding: 10px 12px;
+      border-radius: 12px;
+      font-size: .92rem;
+      background: #151923;
+      border: 1px solid rgba(255,255,255,.07);
+      color: var(--muted);
+    }
+    .status.good { color: #dff4e7; background: rgba(30,58,44,.65); border-color: rgba(143,211,166,.25); }
+    .status.warn { color: #fff2d0; background: rgba(63,47,20,.65); border-color: rgba(255,210,125,.25); }
+    .status.bad { color: #ffe1e1; background: rgba(65,30,30,.65); border-color: rgba(255,144,144,.25); }
+    code.inline {
+      background: #202532;
+      padding: 3px 6px;
+      border-radius: 8px;
+      color: #cfe1ff;
+    }
+    .footer-note { margin-top: 18px; font-size: .87rem; color: var(--muted); }
+    @media (max-width: 920px) {
+      .toolbar, .results { grid-template-columns: 1fr; }
+      .bar-row { grid-template-columns: 120px 1fr 56px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hero">
+      <h1>Fashion Collection Analyzer</h1>
+      <p>Select a folder of collection photos. The app analyzes the images in your browser and returns a collection-level report with outfit-focused dominant colors, estimated materials, silhouettes/themes, and garment counts.</p>
+      <div class="controls">
+        <input id="folderInput" type="file" webkitdirectory multiple accept="image/*" />
+        <button id="analyzeBtn">Analyze folder</button>
+        <button id="exportBtn" class="secondary" disabled>Export report as JSON</button>
+      </div>
+      <div style="margin-top:16px" class="stack">
+        <div class="status" id="statusBox">Waiting for folder selection.</div>
+        <div class="progress-shell"><div class="progress-bar" id="progressBar"></div></div>
+        <div class="small" id="progressText">0 / 0 processed</div>
+      </div>
+      <div class="footer-note">
+        Notes: color analysis now prioritizes the centered runway outfit and suppresses obvious runway/background pixels. Materials, silhouettes, themes, and garment counts are still browser-side estimates, but the logic now uses look-level decisions instead of raw fractional score totals.
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <div class="panel">
+        <h2>How it works</h2>
+        <p>1) You choose a local folder. 2) The app crops toward the centered runway look. 3) Color extraction uses that outfit-focused region instead of the whole frame. 4) Browser-side classification makes look-level decisions for garments, materials, silhouettes, and themes, then aggregates the collection.</p>
+        <p class="small">Best results come from runway, lookbook, or editorial images with one clear look per frame.</p>
+      </div>
+      <div class="panel">
+        <h2>Model status</h2>
+        <p id="modelStatus">Model not loaded yet. It will load on first analysis.</p>
+        <div class="chip-wrap" id="candidateInfo"></div>
+      </div>
+    </div>
+
+    <div class="results">
+      <div class="panel">
+        <h2>1. Color palette</h2>
+        <p>Predominant outfit colors across the whole folder. Background/runway pixels are de-emphasized and similar hues are merged into a maximum of 5 groups.</p>
+        <div id="paletteGrid" class="palette-grid"></div>
+      </div>
+      <div class="panel">
+        <h2>2. Materials used</h2>
+        <p>Estimated materials/textures aggregated across all looks. Values are signal strength per look, not raw classifier decimals.</p>
+        <div id="materialsBars" class="bar-list"></div>
+      </div>
+      <div class="panel">
+        <h2>3. Silhouettes / theme</h2>
+        <p>Silhouette and theme are counted by look. A look is either tagged or not tagged, so the output is shown as look counts and percentages.</p>
+        <div id="silhouetteChips" class="chip-wrap"></div>
+        <div id="themeChips" class="chip-wrap" style="margin-top:14px;"></div>
+      </div>
+      <div class="panel">
+        <h2>4. Garment types and counts</h2>
+        <p>Estimated garment frequency across the collection, using primary-garment and outer-layer decisions to reduce false counts such as trench coats.</p>
+        <div id="garmentBars" class="bar-list"></div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:20px;">
+      <h2>Per-image notes</h2>
+      <p>Quick image-level summaries used in the collection-level aggregation.</p>
+      <div id="gallery" class="gallery"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2';
+
+    env.allowLocalModels = false;
+    env.useBrowserCache = true;
+
+    const baseGarmentCandidates = [
+      'midi dress', 'maxi dress', 'mini dress', 'evening gown', 'column gown', 'cocktail dress',
+      'skirt suit', 'jumpsuit', 'trousers', 'wide-leg trousers', 'cigarette pants',
+      'midi skirt', 'maxi skirt', 'blouse', 'shirt', 'knit top'
+    ];
+
+    const outerwearCandidates = [
+      'military coat', 'wool coat', 'fur coat', 'cape', 'cape coat', 'blazer', 'jacket', 'waistcoat',
+      'cardigan', 'bolero', 'none'
+    ];
+
+    const materialCandidates = [
+      'wool', 'cashmere', 'leather', 'fur', 'velvet', 'silk', 'satin', 'chiffon', 'lace', 'tulle',
+      'organza', 'sheer fabric', 'sequins', 'beading', 'brocade', 'jacquard', 'knitwear', 'jersey', 'denim'
+    ];
+
+    const silhouetteCandidates = [
+      'column silhouette', 'hourglass silhouette', 'A-line silhouette', 'tailored silhouette',
+      'oversized silhouette', 'cropped silhouette', 'draped silhouette', 'bodycon silhouette',
+      'voluminous silhouette', 'cape silhouette'
+    ];
+
+    const themeCandidates = [
+      'military inspired fashion', 'gothic fashion', 'futuristic fashion', 'bohemian fashion',
+      'romantic fashion', 'bridal fashion', 'eveningwear', 'tailoring'
+    ];
+
+    const candidateInfo = document.getElementById('candidateInfo');
+    [
+      ['Base garments', baseGarmentCandidates.length],
+      ['Outerwear', outerwearCandidates.length],
+      ['Materials', materialCandidates.length],
+      ['Silhouettes', silhouetteCandidates.length],
+      ['Themes', themeCandidates.length],
+    ].forEach(([name, count]) => {
+      const el = document.createElement('div');
+      el.className = 'chip';
+      el.textContent = `${name}: ${count} labels`;
+      candidateInfo.appendChild(el);
+    });
+
+    let classifier = null;
+    let currentReport = null;
+
+    const folderInput = document.getElementById('folderInput');
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    const exportBtn = document.getElementById('exportBtn');
+    const statusBox = document.getElementById('statusBox');
+    const progressBar = document.getElementById('progressBar');
+    const progressText = document.getElementById('progressText');
+    const modelStatus = document.getElementById('modelStatus');
+    const paletteGrid = document.getElementById('paletteGrid');
+    const materialsBars = document.getElementById('materialsBars');
+    const silhouetteChips = document.getElementById('silhouetteChips');
+    const themeChips = document.getElementById('themeChips');
+    const garmentBars = document.getElementById('garmentBars');
+    const gallery = document.getElementById('gallery');
+
+    function setStatus(text, tone='') {
+      statusBox.className = `status ${tone}`.trim();
+      statusBox.textContent = text;
+    }
+
+    function setProgress(done, total) {
+      const pct = total ? Math.round(done / total * 100) : 0;
+      progressBar.style.width = `${pct}%`;
+      progressText.textContent = `${done} / ${total} processed`;
+    }
+
+    async function ensureModel() {
+      if (classifier) return classifier;
+      modelStatus.textContent = 'Loading vision model. First run may take a while because the browser caches model files.';
+      setStatus('Loading browser-side AI model…', 'warn');
+      classifier = await pipeline('zero-shot-image-classification', 'Xenova/clip-vit-base-patch32');
+      modelStatus.textContent = 'Model loaded. Analysis now focuses on the centered runway outfit rather than the full frame.';
+      return classifier;
+    }
+
+    function readFileAsDataURL(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function loadImage(src) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = src;
+      });
+    }
+
+    function hexFromRgb(r, g, b) {
+      return '#' + [r, g, b].map(v => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join('');
+    }
+
+    function rgbDistance(a, b) {
+      return Math.sqrt((a[0]-b[0])**2 + (a[1]-b[1])**2 + (a[2]-b[2])**2);
+    }
+
+    function rgbToHsl(r, g, b) {
+      r /= 255; g /= 255; b /= 255;
+      const max = Math.max(r, g, b), min = Math.min(r, g, b);
+      let h, s, l = (max + min) / 2;
+      if (max === min) {
+        h = s = 0;
+      } else {
+        const d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        switch (max) {
+          case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+          case g: h = (b - r) / d + 2; break;
+          default: h = (r - g) / d + 4; break;
+        }
+        h /= 6;
+      }
+      return [h * 360, s, l];
+    }
+
+    function humanColorName([r, g, b]) {
+      const [h, s, l] = rgbToHsl(r, g, b);
+      if (l < 0.13) return 'Black';
+      if (l > 0.87 && s < 0.12) return 'White';
+      if (s < 0.12) {
+        if (l < 0.3) return 'Charcoal';
+        if (l < 0.65) return 'Gray';
+        return 'Light Gray';
+      }
+      if (h >= 330 || h < 10) return l < 0.35 ? 'Burgundy' : 'Red';
+      if (h < 24) return l < 0.45 ? 'Rust' : 'Orange';
+      if (h < 45) return 'Gold';
+      if (h < 70) return 'Olive';
+      if (h < 95) return 'Green';
+      if (h < 150) return s > 0.45 ? 'Emerald' : 'Sage';
+      if (h < 185) return 'Teal';
+      if (h < 220) return 'Blue';
+      if (h < 255) return 'Indigo';
+      if (h < 290) return 'Purple';
+      if (h < 330) return l < 0.45 ? 'Plum' : 'Mauve';
+      return 'Rose';
+    }
+
+    function createFocusCanvas(img, scaleMax = 320) {
+      const scale = Math.min(1, scaleMax / Math.max(img.width, img.height));
+      const w = Math.max(80, Math.round(img.width * scale));
+      const h = Math.max(140, Math.round(img.height * scale));
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      ctx.drawImage(img, 0, 0, w, h);
+      return { canvas, ctx, w, h };
+    }
+
+    function focusedImageDataUrl(img) {
+      const { w, h } = createFocusCanvas(img, 900);
+      const cropX = Math.max(0, Math.round(w * 0.19));
+      const cropY = Math.max(0, Math.round(h * 0.03));
+      const cropW = Math.min(w - cropX, Math.round(w * 0.62));
+      const cropH = Math.min(h - cropY, Math.round(h * 0.88));
+      const out = document.createElement('canvas');
+      out.width = cropW;
+      out.height = cropH;
+      out.getContext('2d').drawImage(img, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH);
+      return out.toDataURL('image/jpeg', 0.92);
+    }
+
+    function extractPaletteFromImage(img, k = 7) {
+      const { ctx, w, h } = createFocusCanvas(img, 220);
+      const { data } = ctx.getImageData(0, 0, w, h);
+      const pixels = [];
+      const cx = w / 2;
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          const i = (y * w + x) * 4;
+          const alpha = data[i + 3];
+          if (alpha < 230) continue;
+          const r0 = data[i], g0 = data[i + 1], b0 = data[i + 2];
+          const brightness = (r0 + g0 + b0) / 3;
+          const [hue, sat, light] = rgbToHsl(r0, g0, b0);
+          const nx = Math.abs((x - cx) / (w * 0.5));
+          const ny = y / h;
+          const centerWeight = 1 - Math.min(1, nx ** 1.4);
+          if (centerWeight < 0.22) continue;
+          if (ny > 0.9) continue;
+          if (ny > 0.72 && centerWeight < 0.55) continue;
+          const likelyRunwayCarpet = ny > 0.52 && hue > 300 && hue < 350 && sat > 0.14 && light > 0.18 && light < 0.72;
+          if (likelyRunwayCarpet && centerWeight < 0.82) continue;
+          const likelyBackgroundDark = brightness < 30 && centerWeight < 0.82;
+          if (likelyBackgroundDark) continue;
+          if (light > 0.96) continue;
+          let repeat = 1;
+          if (centerWeight > 0.86) repeat += 3;
+          else if (centerWeight > 0.72) repeat += 2;
+          else if (centerWeight > 0.58) repeat += 1;
+          if (ny > 0.15 && ny < 0.82) repeat += 1;
+          const r = Math.round(r0 / 12) * 12;
+          const g = Math.round(g0 / 12) * 12;
+          const b = Math.round(b0 / 12) * 12;
+          for (let rep = 0; rep < repeat; rep++) pixels.push([r, g, b]);
+        }
+      }
+      if (!pixels.length) return [];
+
+      const points = pixels.filter((_, idx) => idx % Math.max(1, Math.floor(pixels.length / 2200)) === 0);
+      let centroids = [];
+      const step = Math.max(1, Math.floor(points.length / k));
+      for (let i = 0; i < k; i++) centroids.push([...points[Math.min(i * step, points.length - 1)]]);
+
+      for (let iter = 0; iter < 9; iter++) {
+        const buckets = Array.from({ length: k }, () => []);
+        for (const p of points) {
+          let best = 0;
+          let minDist = Infinity;
+          for (let c = 0; c < centroids.length; c++) {
+            const dist = rgbDistance(p, centroids[c]);
+            if (dist < minDist) { minDist = dist; best = c; }
+          }
+          buckets[best].push(p);
+        }
+        centroids = centroids.map((c, i) => {
+          if (!buckets[i].length) return c;
+          const sum = buckets[i].reduce((acc, p) => [acc[0]+p[0], acc[1]+p[1], acc[2]+p[2]], [0,0,0]);
+          return sum.map(v => Math.round(v / buckets[i].length));
+        });
+      }
+
+      const finalBuckets = Array.from({ length: k }, () => 0);
+      for (const p of points) {
+        let best = 0;
+        let minDist = Infinity;
+        for (let c = 0; c < centroids.length; c++) {
+          const dist = rgbDistance(p, centroids[c]);
+          if (dist < minDist) { minDist = dist; best = c; }
+        }
+        finalBuckets[best] += 1;
+      }
+
+      return centroids
+        .map((rgb, i) => ({ rgb, count: finalBuckets[i], hex: hexFromRgb(...rgb), label: humanColorName(rgb) }))
+        .filter(x => x.count > 0)
+        .sort((a, b) => b.count - a.count);
+    }
+
+    function groupPaletteEntries(entries, limit = 5) {
+      const grouped = [];
+      for (const entry of entries.sort((a,b) => b.count - a.count)) {
+        const [h, s, l] = rgbToHsl(...entry.rgb);
+        let matched = null;
+        for (const group of grouped) {
+          const [gh, gs, gl] = rgbToHsl(...group.rgb);
+          const hueDiff = Math.min(Math.abs(h - gh), 360 - Math.abs(h - gh));
+          const closeNeutral = s < 0.14 && gs < 0.14 && Math.abs(l - gl) < 0.18;
+          const closeColor = hueDiff < 18 && Math.abs(s - gs) < 0.20 && Math.abs(l - gl) < 0.20;
+          if (closeNeutral || closeColor || rgbDistance(entry.rgb, group.rgb) < 28) {
+            matched = group;
+            break;
+          }
+        }
+        if (!matched) {
+          grouped.push({ ...entry });
+        } else {
+          const total = matched.count + entry.count;
+          matched.rgb = [0,1,2].map(i => Math.round((matched.rgb[i] * matched.count + entry.rgb[i] * entry.count) / total));
+          matched.count = total;
+          matched.hex = hexFromRgb(...matched.rgb);
+          matched.label = humanColorName(matched.rgb);
+        }
+      }
+      const total = grouped.reduce((acc, item) => acc + item.count, 0) || 1;
+      return grouped
+        .sort((a,b) => b.count - a.count)
+        .slice(0, limit)
+        .map(item => ({ ...item, ratio: item.count / total }));
+    }
+
+    async function classifyImage(imageSrc, labels, hypothesisTemplate) {
+      const clf = await ensureModel();
+      const out = await clf(imageSrc, labels, { hypothesis_template: hypothesisTemplate });
+      return Array.isArray(out) ? out : [out];
+    }
+
+    function sortResults(results) {
+      return [...results].sort((a,b) => b.score - a.score);
+    }
+
+    function addScore(target, label, score) {
+      target[label] = (target[label] || 0) + score;
+    }
+
+    function addCount(target, label, count = 1) {
+      target[label] = (target[label] || 0) + count;
+    }
+
+    function topEntries(mapObj, limit = 10) {
+      return Object.entries(mapObj).sort((a,b) => b[1] - a[1]).slice(0, limit);
+    }
+
+    function renderPalette(items) {
+      paletteGrid.innerHTML = '';
+      if (!items.length) {
+        paletteGrid.innerHTML = '<p class="small">No palette data yet.</p>';
+        return;
+      }
+      items.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'swatch';
+        card.innerHTML = `
+          <div class="swatch-color" style="background:${item.hex}"></div>
+          <div class="swatch-meta">
+            <div><strong>${item.label}</strong></div>
+            <div>${item.hex.toUpperCase()}</div>
+            <div>${(item.ratio * 100).toFixed(1)}%</div>
+          </div>
+        `;
+        paletteGrid.appendChild(card);
+      });
+    }
+
+    function renderBars(container, entries, totalReference = null, formatter = null) {
+      container.innerHTML = '';
+      if (!entries.length) {
+        container.innerHTML = '<p class="small">No data yet.</p>';
+        return;
+      }
+      const maxVal = totalReference || entries[0][1] || 1;
+      entries.forEach(([label, value]) => {
+        const pct = Math.max(4, (value / maxVal) * 100);
+        const row = document.createElement('div');
+        row.className = 'bar-row';
+        row.innerHTML = `
+          <div>${label}</div>
+          <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
+          <div style="text-align:right">${formatter ? formatter(value) : value.toFixed ? value.toFixed(2) : value}</div>
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    function renderChips(container, entries, formatter) {
+      container.innerHTML = '';
+      if (!entries.length) {
+        container.innerHTML = '<div class="small">No data yet.</div>';
+        return;
+      }
+      entries.forEach(([label, value]) => {
+        const chip = document.createElement('div');
+        chip.className = 'chip';
+        chip.textContent = formatter ? formatter(label, value) : `${label} · ${value}`;
+        container.appendChild(chip);
+      });
+    }
+
+    function fileIsImage(file) {
+      return file.type.startsWith('image/');
+    }
+
+    function chooseBaseGarment(sorted) {
+      const dressLike = ['midi dress', 'maxi dress', 'mini dress', 'cocktail dress'];
+      const gownLike = ['evening gown', 'column gown'];
+      const skirtLike = ['midi skirt', 'maxi skirt'];
+      const best = sorted[0];
+      if (!best) return null;
+      const topMap = Object.fromEntries(sorted.map(x => [x.label, x.score]));
+      const bestDressScore = Math.max(...dressLike.map(x => topMap[x] || 0), 0);
+      const bestGownScore = Math.max(...gownLike.map(x => topMap[x] || 0), 0);
+      const bestSkirtScore = Math.max(...skirtLike.map(x => topMap[x] || 0), 0);
+      if (bestGownScore >= 0.24) return sorted.find(x => gownLike.includes(x.label) && x.score === bestGownScore)?.label || 'evening gown';
+      if (bestDressScore >= Math.max(0.2, bestSkirtScore + 0.03)) {
+        const winner = sorted.find(x => dressLike.includes(x.label) && x.score === bestDressScore)?.label || 'midi dress';
+        return winner;
+      }
+      if (bestSkirtScore >= 0.24) return sorted.find(x => skirtLike.includes(x.label) && x.score === bestSkirtScore)?.label || 'midi skirt';
+      if (best.score >= 0.22) return best.label;
+      return null;
+    }
+
+    function chooseOuterwear(sorted) {
+      const best = sorted[0];
+      if (!best || best.label === 'none' || best.score < 0.24) return null;
+      if (best.label === 'cape coat') return 'cape';
+      return best.label;
+    }
+
+    function mergeMaterialScores(target, results) {
+      sortResults(results).slice(0, 4).forEach(item => {
+        if (item.score >= 0.16) addScore(target, item.label, item.score);
+      });
+    }
+
+    function chooseSilhouettes(results) {
+      const sorted = sortResults(results);
+      const picks = [];
+      for (const item of sorted) {
+        if (item.score < 0.23) continue;
+        if (!picks.length || (picks.length < 2 && item.score >= sorted[0].score - 0.07)) picks.push(item.label);
+      }
+      return [...new Set(picks)].slice(0, 2);
+    }
+
+    function chooseThemes(results) {
+      const sorted = sortResults(results);
+      const picks = [];
+      for (const item of sorted) {
+        if (item.label === 'bridal fashion') {
+          if (item.score >= 0.35) picks.push(item.label);
+          continue;
+        }
+        if (item.score >= 0.25) picks.push(item.label);
+      }
+      return [...new Set(picks)].slice(0, 2);
+    }
+
+    async function analyzeFiles(files) {
+      const images = files.filter(fileIsImage);
+      if (!images.length) {
+        setStatus('No image files found in the selected folder.', 'bad');
+        return;
+      }
+
+      analyzeBtn.disabled = true;
+      exportBtn.disabled = true;
+      gallery.innerHTML = '';
+      setProgress(0, images.length);
+      setStatus(`Preparing to analyze ${images.length} image(s)…`, 'warn');
+
+      const report = {
+        generatedAt: new Date().toISOString(),
+        imageCount: images.length,
+        palette: [],
+        materials: {},
+        silhouettes: {},
+        themes: {},
+        garments: {},
+        imageNotes: []
+      };
+
+      const paletteEntries = [];
+      const materialScores = {};
+      const silhouetteCounts = {};
+      const themeCounts = {};
+      const garmentCounts = {};
+
+      try {
+        await ensureModel();
+      } catch (err) {
+        console.error(err);
+        setStatus('Could not load the browser-side AI model. Check your internet connection and try again.', 'bad');
+        analyzeBtn.disabled = false;
+        return;
+      }
+
+      for (let idx = 0; idx < images.length; idx++) {
+        const file = images[idx];
+        setStatus(`Analyzing ${file.name} (${idx + 1}/${images.length})…`, 'warn');
+        const dataUrl = await readFileAsDataURL(file);
+        const img = await loadImage(dataUrl);
+        const focusUrl = focusedImageDataUrl(img);
+
+        const palette = extractPaletteFromImage(img, 7);
+        paletteEntries.push(...palette);
+
+        let baseGarments = [], outerwear = [], materials = [], silhouettes = [], themes = [];
+        try {
+          [baseGarments, outerwear, materials, silhouettes, themes] = await Promise.all([
+            classifyImage(focusUrl, baseGarmentCandidates, 'The main garment worn by the runway model is {}.'),
+            classifyImage(focusUrl, outerwearCandidates, 'The outer layer worn by the runway model is {}.'),
+            classifyImage(focusUrl, materialCandidates, 'The clothing in this runway look is made of {}.'),
+            classifyImage(focusUrl, silhouetteCandidates, 'This runway look has a {}.'),
+            classifyImage(focusUrl, themeCandidates, 'This runway look expresses {}.'),
+          ]);
+        } catch (err) {
+          console.error('Classification error on', file.name, err);
+        }
+
+        const sortedBase = sortResults(baseGarments);
+        const sortedOuter = sortResults(outerwear);
+        const sortedMaterials = sortResults(materials);
+        const sortedSil = sortResults(silhouettes);
+        const sortedThemes = sortResults(themes);
+
+        const primaryGarment = chooseBaseGarment(sortedBase);
+        const outerLayer = chooseOuterwear(sortedOuter);
+        if (primaryGarment) addCount(garmentCounts, primaryGarment, 1);
+        if (outerLayer) addCount(garmentCounts, outerLayer, 1);
+
+        mergeMaterialScores(materialScores, sortedMaterials);
+        chooseSilhouettes(sortedSil).forEach(label => addCount(silhouetteCounts, label, 1));
+        chooseThemes(sortedThemes).forEach(label => addCount(themeCounts, label, 1));
+
+        const note = {
+          file: file.name,
+          primaryGarment,
+          outerLayer,
+          topGarments: [primaryGarment, outerLayer].filter(Boolean),
+          topMaterials: sortedMaterials.filter(x => x.score >= 0.16).slice(0, 3),
+          topSilhouettes: chooseSilhouettes(sortedSil),
+          topThemes: chooseThemes(sortedThemes),
+          palette: groupPaletteEntries(palette, 4)
+        };
+        report.imageNotes.push(note);
+
+        const card = document.createElement('div');
+        card.className = 'thumb';
+        card.innerHTML = `
+          <img src="${dataUrl}" alt="${file.name}" />
+          <div class="meta">
+            <strong>${file.name}</strong>
+            <div class="mini">Garments: ${note.topGarments.join(', ') || '—'}</div>
+            <div class="mini">Materials: ${note.topMaterials.map(x => x.label).join(', ') || '—'}</div>
+            <div class="mini">Silhouette/theme: ${[...note.topSilhouettes, ...note.topThemes].join(', ') || '—'}</div>
+          </div>
+        `;
+        gallery.appendChild(card);
+
+        setProgress(idx + 1, images.length);
+      }
+
+      report.palette = groupPaletteEntries(paletteEntries, 5);
+      report.materials = Object.fromEntries(topEntries(materialScores, 10).map(([label, score]) => [label, score / images.length]));
+      report.silhouettes = Object.fromEntries(topEntries(silhouetteCounts, 8));
+      report.themes = Object.fromEntries(topEntries(themeCounts, 8));
+      report.garments = Object.fromEntries(topEntries(garmentCounts, 16));
+
+      renderPalette(report.palette);
+      renderBars(materialsBars, topEntries(report.materials, 10), null, v => `${Math.round(v * 100)}% signal`);
+      renderChips(silhouetteChips, topEntries(report.silhouettes, 6), (label, value) => `${label} · ${value} look${value === 1 ? '' : 's'} (${Math.round(value / images.length * 100)}%)`);
+      renderChips(themeChips, topEntries(report.themes, 6), (label, value) => `${label} · ${value} look${value === 1 ? '' : 's'} (${Math.round(value / images.length * 100)}%)`);
+      renderBars(garmentBars, topEntries(report.garments, 16), null, v => `${Math.round(v)} look${Math.round(v) === 1 ? '' : 's'}`);
+
+      currentReport = report;
+      exportBtn.disabled = false;
+      analyzeBtn.disabled = false;
+      setStatus(`Done. Analyzed ${images.length} image(s) with outfit-focused color and label logic.`, 'good');
+    }
+
+    analyzeBtn.addEventListener('click', async () => {
+      const files = [...folderInput.files];
+      if (!files.length) {
+        setStatus('Select a folder first.', 'bad');
+        return;
+      }
+      try {
+        await analyzeFiles(files);
+      } catch (err) {
+        console.error(err);
+        setStatus('Analysis failed. Check the browser console for technical details.', 'bad');
+        analyzeBtn.disabled = false;
+      }
+    });
+
+    exportBtn.addEventListener('click', () => {
+      if (!currentReport) return;
+      const blob = new Blob([JSON.stringify(currentReport, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'fashion-collection-report.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+  </script>
+</body>
+</html>
